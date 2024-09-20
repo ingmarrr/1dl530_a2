@@ -5,6 +5,10 @@
 #include <numeric>
 #include <string>
 #include <thread>
+#include <vector>
+#include <time.h>
+
+double time1, timedif;
 
 const char* USAGE =
     "Usage: ./integrate [-h] <num_threads> <num_trapezes>\n"
@@ -12,10 +16,10 @@ const char* USAGE =
     "  num_threads   : Number of threads to use\n"
     "  num_trapezes  : Number of trapezes for integration\n";
 
-#define error(__VA_ARGS__) \
+#define error(...) \
     std::cerr << "[error] " << __VA_ARGS__ << std::endl; \
     std::cerr << USAGE << std::endl; \
-    exit(1) \
+    exit(1); \
 
 auto erange(uint64_t start, uint64_t end) -> std::vector<uint64_t>
 {
@@ -39,17 +43,6 @@ auto irange(uint64_t start, uint64_t end) -> std::vector<uint64_t>
     return out;
 }
 
-template <typename V, typename T, typename Accumulator>
-auto fold(const std::vector<V>& vec, T init, Accumulator acc) -> T
-{
-    T out = init;
-    for (const T& val : vec)
-    {
-        out = acc(out, val);
-    }
-    return out;
-}
-
 auto f(double x) -> double
 {
     return 4.0 / (1.0 + x * x);
@@ -66,17 +59,7 @@ auto seq_integrate(int n) -> double
     {
         sum += f(a + xi * width);
     }
-    return width * sum;
-
-    /* A = ((a + b) / 2) * h */
-
-    /* return width * fold( */
-    /*     range(1, n), sum, */
-    /*     [a, width](double acc, double nxt) { */
-    /*         auto x = a + nxt * width; */
-    /*         return acc + f(x); */
-    /*     } */
-    /* ); */
+    return width * sum / n;
 }
 
 auto partial(
@@ -125,16 +108,6 @@ auto par_integreate(int n_threads, int n_traps) -> double
 
     auto total = std::accumulate(partials.begin(), partials.end(), 0.0);
     return width * total / n_traps;
-
-    /* A = ((a + b) / 2) * h */
-
-    /* return width * fold( */
-    /*     range(1, n), sum, */
-    /*     [a, width](double acc, double nxt) { */
-    /*         auto x = a + nxt * width; */
-    /*         return acc + f(x); */
-    /*     } */
-    /* ); */
 }
 
 int main(int argc, char* argv[])
@@ -159,22 +132,28 @@ int main(int argc, char* argv[])
 
     auto n_threads = std::stoll(argv[1]);
     auto n_traps   = std::stoll(argv[2]);
-    /* printf("Nr of Threads: %llu\nNr Of Trapezes: %llu\n", nr_threads, nr_traps); */
-    /* auto out = integrate(nr_traps); */
+
+    time1 = (double) clock();            /* get initial time */
+    time1 = time1 / CLOCKS_PER_SEC;      /*    in seconds    */
+
+    // printf("Nr of Threads: %llu\nNr Of Trapezes: %llu\n", n_threads, n_traps);
 
     std::cout << std::setprecision(15);
     const double PI = 3.14159265358979323846;
 
-    for (int n = 10; n <= 100000000; n *= 10) 
+    for (int n = 1; n <= 100000000; n *= 10) 
     {
-        double result = par_integreate(n_threads, n);
-        /* double result = seq_integrate(n); */
+        //double result = par_integreate(n_threads, n);
+        double result = seq_integrate(n);
         double relative_error = std::abs(result - PI) / PI;
+
+        timedif = ( ((double) clock()) / CLOCKS_PER_SEC) - time1;
         
         std::cout 
             << "Trapezoids: " << std::setw(9) << n 
             << " Result: " << result 
-            << " Relative Error: " << relative_error << std::endl;
+            << " Relative Error: " << relative_error
+            << " The elapsed time is: "<< timedif << " in seconds"<< std::endl;
     }
 
 
