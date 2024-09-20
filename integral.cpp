@@ -8,8 +8,6 @@
 #include <vector>
 #include <time.h>
 
-double time1, timedif;
-
 const char* USAGE =
     "Usage: ./integrate [-h] <num_threads> <num_trapezes>\n"
     "  -h            : Print this help message and exit\n"
@@ -131,29 +129,42 @@ int main(int argc, char* argv[])
     }
 
     auto n_threads = std::stoll(argv[1]);
-    auto n_traps   = std::stoll(argv[2]);
+    /* auto n_traps   = std::stoll(argv[2]); */
 
-    time1 = (double) clock();            /* get initial time */
-    time1 = time1 / CLOCKS_PER_SEC;      /*    in seconds    */
 
-    // printf("Nr of Threads: %llu\nNr Of Trapezes: %llu\n", n_threads, n_traps);
+    std::cout << "Nr of Threads: " << n_threads << std::endl;
 
     std::cout << std::setprecision(15);
     const double PI = 3.14159265358979323846;
 
     for (int n = 1; n <= 100000000; n *= 10) 
     {
-        //double result = par_integreate(n_threads, n);
-        double result = seq_integrate(n);
-        double relative_error = std::abs(result - PI) / PI;
+        auto seq_start  = (double) clock();
+        seq_start       = seq_start / CLOCKS_PER_SEC;
+        auto seq_result = seq_integrate(n);
+        auto seq_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - seq_start;
+        auto seq_err   = std::abs(seq_result - PI) / PI;
 
-        timedif = ( ((double) clock()) / CLOCKS_PER_SEC) - time1;
-        
         std::cout 
-            << "Trapezoids: " << std::setw(9) << n 
-            << " Result: " << result 
-            << " Relative Error: " << relative_error
-            << " The elapsed time is: "<< timedif << " in seconds"<< std::endl;
+            << "Trapezoids [seq]: " << n << std::endl
+            << " Result: " << seq_result << std::endl
+            << " Relative Error: " << seq_err << std::endl
+            << " The elapsed time is: "<< seq_diff << " in seconds"<< std::endl;
+
+        auto par_start  = (double) clock();
+        par_start       = par_start / CLOCKS_PER_SEC;
+        auto par_result = par_integreate(n_threads, n);
+        auto par_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - par_start;
+        auto par_err   = std::abs(par_result - PI) / PI;
+
+        std::cout 
+            << "Trapezoids [par]: " << n << std::endl
+            << " Result: " << par_result << std::endl
+            << " Relative Error: " << par_err << std::endl
+            << " The elapsed time is: "<< par_diff << " in seconds"<< std::endl;
+
+        std::cout << std::endl << std::endl;
+
     }
 
 
