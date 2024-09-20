@@ -9,6 +9,8 @@
 #include <vector>
 #include <time.h>
 
+#include "range.hpp"
+
 const char* USAGE =
     "Usage: ./integrate [-h] <num_threads> <num_trapezes>\n"
     "  -h            : Print this help message and exit\n"
@@ -19,28 +21,6 @@ const char* USAGE =
     std::cerr << "[error] " << __VA_ARGS__ << std::endl; \
     std::cerr << USAGE << std::endl; \
     exit(1); \
-
-auto erange(uint64_t start, uint64_t end) -> std::vector<uint64_t>
-{
-    auto out = std::vector<uint64_t>();
-    for (auto i = start; i < end; ++i)
-    {
-        out.push_back(i);
-    }
-
-    return out;
-}
-
-auto irange(uint64_t start, uint64_t end) -> std::vector<uint64_t>
-{
-    auto out = std::vector<uint64_t>();
-    for (auto i = start; i <= end; ++i) 
-    {
-        out.push_back(i);
-    }
-
-    return out;
-}
 
 auto f(double x) -> double
 {
@@ -61,7 +41,7 @@ auto seq_integrate(int n) -> double
     return width * sum / n;
 }
 
-auto partial(
+void partial(
     double& sum, 
     const uint64_t index, 
     const double a, 
@@ -77,7 +57,7 @@ auto partial(
     sum = out;
 }
 
-auto par_integreate(int n_threads, int n_traps) -> double
+double par_integreate(int n_threads, int n_traps)
 {
     const double a  = 0.0;
     const double b  = 1.0;
@@ -133,7 +113,7 @@ int main(int argc, char* argv[])
     /* auto n_traps   = std::stoll(argv[2]); */
 
 
-    std::cout << "Nr of Threads: " << n_threads << std::endl;
+    std::cout << "Nr of Threads: " << n_threads << std::endl << std::endl;
 
     std::cout << std::setprecision(15);
     const double PI = 3.14159265358979323846;
