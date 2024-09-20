@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <string>
 #include <thread>
@@ -88,7 +89,7 @@ auto par_integreate(int n_threads, int n_traps) -> double
     auto chunks     = div(n_traps, n_threads);
 
     auto start = 1;
-    for (auto tix : erange(0, n_threads)) 
+    for (int tix : erange(0, n_threads)) 
     {
         auto end = start + chunks.quot - 1 + (tix < chunks.rem ? 1 : 0);
         workers[tix] = std::thread(
@@ -118,7 +119,7 @@ int main(int argc, char* argv[])
             exit(0);
         }
         else
-        {
+    {
             error("invalid argument, expected [--help | -h], found " << argv[1]);
         }
     }
@@ -137,8 +138,12 @@ int main(int argc, char* argv[])
     std::cout << std::setprecision(15);
     const double PI = 3.14159265358979323846;
 
+    std::mutex io_mutex{};
+
     for (int n = 1; n <= 100000000; n *= 10) 
     {
+        io_mutex.lock();
+
         auto seq_start  = (double) clock();
         seq_start       = seq_start / CLOCKS_PER_SEC;
         auto seq_result = seq_integrate(n);
@@ -148,7 +153,7 @@ int main(int argc, char* argv[])
         std::cout 
             << "Trapezoids [seq]: " << n << std::endl
             << " Result: " << seq_result << std::endl
-            << " Relative Error: " << seq_err << std::endl
+            << " Accuracy: " << seq_err << std::endl
             << " The elapsed time is: "<< seq_diff << " in seconds"<< std::endl;
 
         auto par_start  = (double) clock();
@@ -160,13 +165,12 @@ int main(int argc, char* argv[])
         std::cout 
             << "Trapezoids [par]: " << n << std::endl
             << " Result: " << par_result << std::endl
-            << " Relative Error: " << par_err << std::endl
+            << " Accuracy: " << par_err << std::endl
             << " The elapsed time is: "<< par_diff << " in seconds"<< std::endl;
 
         std::cout << std::endl << std::endl;
-
+        io_mutex.unlock();
     }
-
 
     return 0;
 }
