@@ -11,16 +11,16 @@
 
 #include "range.hpp"
 
-const char* USAGE =
+const char *USAGE =
     "Usage: ./integrate [-h] <num_threads> <num_trapezes>\n"
     "  -h            : Print this help message and exit\n"
     "  num_threads   : Number of threads to use\n"
     "  num_trapezes  : Number of trapezes for integration\n";
 
-#define error(...) \
+#define error(...)                                       \
     std::cerr << "[error] " << __VA_ARGS__ << std::endl; \
-    std::cerr << USAGE << std::endl; \
-    exit(1); \
+    std::cerr << USAGE << std::endl;                     \
+    exit(1);
 
 auto f(double x) -> double
 {
@@ -29,10 +29,10 @@ auto f(double x) -> double
 
 auto seq_integrate(int n) -> double
 {
-    const double a  = 0.0;
-    const double b  = 1.0;
-    auto width      = (b - a) / n;
-    auto sum        = 0.0;
+    const double a = 0.0;
+    const double b = 1.0;
+    auto width = (b - a) / n;
+    auto sum = 0.0;
 
     for (auto xi : irange(1, n))
     {
@@ -42,13 +42,13 @@ auto seq_integrate(int n) -> double
 }
 
 void partial(
-    double& sum, 
-    const uint64_t index, 
-    const double a, 
-    const double width, 
-    const uint64_t start, 
-    const uint64_t end
-) {
+    double &sum,
+    const uint64_t index,
+    const double a,
+    const double width,
+    const uint64_t start,
+    const uint64_t end)
+{
     auto out = 0.0;
     for (auto xi = start; xi <= end; ++xi)
     {
@@ -59,24 +59,23 @@ void partial(
 
 double par_integreate(int n_threads, int n_traps)
 {
-    const double a  = 0.0;
-    const double b  = 1.0;
-    auto width      = (b - a) / n_traps;
+    const double a = 0.0;
+    const double b = 1.0;
+    auto width = (b - a) / n_traps;
 
     std::vector<double> partials(n_threads);
     std::vector<std::thread> workers(n_threads);
 
-    auto chunks     = div(n_traps, n_threads);
+    auto chunks = div(n_traps, n_threads);
 
     auto start = 1;
-    for (int tix : erange(0, n_threads)) 
+    for (int tix : erange(0, n_threads))
     {
         auto end = start + chunks.quot - 1 + (tix < chunks.rem ? 1 : 0);
         workers[tix] = std::thread(
-            partial, 
+            partial,
             std::ref(partials[tix]),
-            tix, a, width, start, end
-        );
+            tix, a, width, start, end);
         start = end + 1;
     }
 
@@ -89,7 +88,7 @@ double par_integreate(int n_threads, int n_traps)
     return width * total / n_traps;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     if (argc == 2)
     {
@@ -99,7 +98,7 @@ int main(int argc, char* argv[])
             exit(0);
         }
         else
-    {
+        {
             error("invalid argument, expected [--help | -h], found " << argv[1]);
         }
     }
@@ -110,47 +109,65 @@ int main(int argc, char* argv[])
     }
 
     auto n_threads = std::stoll(argv[1]);
-    /* auto n_traps   = std::stoll(argv[2]); */
+    auto n_traps = std::stoll(argv[2]);
 
-
-    std::cout << "Nr of Threads: " << n_threads << std::endl << std::endl;
+    std::cout << "Nr of Threads: " << n_threads << std::endl;
+    std::cout << "Nr of Trapezes: " << n_traps << std::endl << std::endl;
 
     std::cout << std::setprecision(15);
     const double PI = 3.14159265358979323846;
 
     std::mutex io_mutex{};
 
-    for (int n = 1; n <= 100000000; n *= 10) 
-    {
-        io_mutex.lock();
+    io_mutex.lock();
+    auto par_start = (double)clock();
 
-        auto seq_start  = (double) clock();
-        seq_start       = seq_start / CLOCKS_PER_SEC;
-        auto seq_result = seq_integrate(n);
-        auto seq_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - seq_start;
-        auto seq_err   = std::abs(seq_result - PI) / PI;
+    par_start = par_start / CLOCKS_PER_SEC;
 
-        std::cout 
-            << "Trapezoids [seq]: " << n << std::endl
-            << " Result: " << seq_result << std::endl
-            << " Accuracy: " << seq_err << std::endl
-            << " The elapsed time is: "<< seq_diff << " in seconds"<< std::endl;
+    auto par_result = par_integreate(n_threads, n_traps);
+    auto par_diff = (((double)clock()) / CLOCKS_PER_SEC) - par_start;
+    auto par_err = std::abs(par_result - PI) / PI;
 
-        auto par_start  = (double) clock();
-        par_start       = par_start / CLOCKS_PER_SEC;
-        auto par_result = par_integreate(n_threads, n);
-        auto par_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - par_start;
-        auto par_err   = std::abs(par_result - PI) / PI;
+    std::cout
+        << "Trapezoids [par]: " << n_traps << std::endl
+        << " Result: " << par_result << std::endl
+        << " Accuracy: " << par_err << std::endl
+        << " The elapsed time is: " << par_diff << " in seconds" << std::endl;
 
-        std::cout 
-            << "Trapezoids [par]: " << n << std::endl
-            << " Result: " << par_result << std::endl
-            << " Accuracy: " << par_err << std::endl
-            << " The elapsed time is: "<< par_diff << " in seconds"<< std::endl;
+    std::cout << std::endl << std::endl;
+    io_mutex.unlock();
 
-        std::cout << std::endl << std::endl;
-        io_mutex.unlock();
-    }
+    // used this for the Exercise 1 - b) to gradually have the number of trapezes - uncomment to use this to test
+    // for (int n = 1; n <= 100000000; n *= 10)
+    // {
+    //     io_mutex.lock();
+    //     auto seq_start  = (double) clock();
+    //     seq_start       = seq_start / CLOCKS_PER_SEC;
+    //     auto seq_result = seq_integrate(n);
+    //     auto seq_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - seq_start;
+    //     auto seq_err   = std::abs(seq_result - PI) / PI;
+
+    //     std::cout
+    //         << "Trapezoids [seq]: " << n << std::endl
+    //         << " Result: " << seq_result << std::endl
+    //         << " Accuracy: " << seq_err << std::endl
+    //         << " The elapsed time is: "<< seq_diff << " in seconds"<< std::endl;
+
+    //     auto par_start  = (double) clock();
+    //     par_start       = par_start / CLOCKS_PER_SEC;
+    //     auto par_result = par_integreate(n_threads, n);
+    //     auto par_diff    = ( ((double) clock()) / CLOCKS_PER_SEC) - par_start;
+    //     auto par_err   = std::abs(par_result - PI) / PI;
+
+    //     std::cout
+    //         << "Trapezoids [par]: " << n << std::endl
+    //         << " Result: " << par_result << std::endl
+    //         << " Accuracy: " << par_err << std::endl
+    //         << " The elapsed time is: "<< par_diff << " in seconds"<< std::endl;
+
+    //     std::cout << std::endl << std::endl;
+    //     io_mutex.unlock();
+    // }
 
     return 0;
 }

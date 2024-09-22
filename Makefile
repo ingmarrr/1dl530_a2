@@ -14,11 +14,12 @@ PROG=$(INTEGRAL)
 # clean:
 # 	$(RM) bin/$(PROG)
 
+# given the number of threads as the second arg and number of trepezes as the third
 run: build
-	./$(PROG).exe 10 10
+	./$(PROG).exe 90 10000000 
 
 build: $(PROG).cpp
-	g++ -std=c++17 -Wall -pthread $(PROG).cpp -o $(PROG)
+	g++ -std=c++11 -Wall -pthread $(PROG).cpp -o $(PROG)
 
 clean:
 	$(RM) $(PROG)
