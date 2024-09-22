@@ -3,22 +3,28 @@
 # #
 SORTED=sorted_list
 INTEGRAL=integral
-PROG=$(INTEGRAL)
-
-# run: build
-# 	@./bin/$(PROG) 10 10
-
-# build: $(PROG).cpp
-# 	@g++ -std=c++17 -Wall -pthread $(PROG).cpp -o bin/$(PROG)
-
-# clean:
-# 	$(RM) bin/$(PROG)
+SIEVE=sieve
+FLAKY=flaky
+PROG=$(FLAKY)
 
 run: build
-	./$(PROG).exe 10 10
+	@./bin/$(PROG) 120
 
 build: $(PROG).cpp
-	g++ -std=c++17 -Wall -pthread $(PROG).cpp -o $(PROG)
+	@g++ -std=c++11 -Wall -pthread $(PROG).cpp -o bin/$(PROG)
+
+bench: 
+	@g++ -Wall -std=c++11 -pthread -O3 benchmark_example.cpp -o bin/bench
+	@bin/bench 32
 
 clean:
-	$(RM) $(PROG)
+	@rm -rf bin
+	@mkdir bin
+
+run-win: build
+	./bin/$(PROG).exe 10 10
+
+build-win: $(PROG).cpp
+	g++ -std=c++11 -Wall -pthread $(PROG).cpp -o ./bin/$(PROG)
+
+

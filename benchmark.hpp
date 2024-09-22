@@ -1,3 +1,4 @@
+#include <iostream>
 #ifndef lacpp_benchmark_hpp
 #define lacpp_benchmark_hpp benchmark_hpp
 
