@@ -1,4 +1,3 @@
-#include <atomic>
 #include <cstddef>
 #include <mutex>
 #ifndef lacpp_sorted_list_hpp

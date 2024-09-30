@@ -1,6 +1,6 @@
 #include <atomic>
 #include <cstddef>
-#include <mutex>
+#include <thread>
 #ifndef lacpp_sorted_list_hpp
 #define lacpp_sorted_list_hpp lacpp_sorted_list_hpp
 
@@ -14,17 +14,18 @@ struct tatas_lock {
 public:
 	void lock() {
 		while (true) {
-			while (state.load()) {}
-			if (!state.exchange(true))
+			while (state.load(std::memory_order_relaxed)) 
+			{
+				std::this_thread::yield();
+			}
+			if (!state.exchange(true, std::memory_order_acquire))
 			{
 				return;
 			}
 		}
 	}
 
-	void unlock() {
-		state.store(false);
-	}
+	void unlock() { state.store(false, std::memory_order_relaxed); }
 };
 
 /* struct for list nodes */
