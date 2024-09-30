@@ -1,26 +1,45 @@
+#include <atomic>
 #include <cstddef>
-#include <cstdio>
-#include <mutex>
+#include <thread>
 #ifndef lacpp_sorted_list_hpp
 #define lacpp_sorted_list_hpp lacpp_sorted_list_hpp
 
 /* a sorted list implementation by David Klaftenegger, 2015
  * please report bugs or suggest improvements to david.klaftenegger@it.uu.se
  */
+struct tatas_lock {
+	std::atomic_bool state;
+
+public:
+	void lock() {
+		while (true) {
+			while (state.load(std::memory_order_relaxed)) 
+			{
+				std::this_thread::yield();
+			}
+			if (!state.exchange(true, std::memory_order_acquire))
+			{
+				return;
+			}
+		}
+	}
+
+	void unlock() { state.store(false, std::memory_order_relaxed); }
+};
 
 /* struct for list nodes */
 template<typename T>
 struct node {
 	T			value;
 	node<T>*	next;
-	std::mutex	mutex;
+	tatas_lock	mutex;
 };
 
 /* non-concurrent sorted singly-linked list */
 template<typename T>
 class sorted_list {
 	node<T>*	head = nullptr;
-	std::mutex	head_mutex;
+	tatas_lock	head_mutex;
 
 public:
 	/* default implementations:
@@ -112,11 +131,11 @@ public:
 	/* count elements with value v in the list */
 	std::size_t count(T v) {
 		std::size_t cnt = 0;
-		std::unique_lock<std::mutex> head_lock(head_mutex);
+		std::unique_lock<tatas_lock> head_lock(head_mutex);
 		node<T>* curr = head;
 
 		while(curr != nullptr && curr->value < v) {
-			std::unique_lock<std::mutex> curr_lock(curr->mutex);
+			std::unique_lock<tatas_lock> curr_lock(curr->mutex);
 			head_lock.unlock();
 			curr = curr->next;
 			head_lock = std::move(curr_lock);
@@ -124,7 +143,7 @@ public:
 
 		/* count elements */
 		while(curr != nullptr && curr->value == v) {
-			std::unique_lock<std::mutex> curr_lock(curr->mutex);
+			std::unique_lock<tatas_lock> curr_lock(curr->mutex);
 			cnt++;
 			node<T>* next = curr->next;
 			head_lock.unlock();
