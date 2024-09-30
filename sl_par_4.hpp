@@ -112,7 +112,7 @@ public:
 		{
 			if (pred != nullptr) pred->mutex.unlock();
 			else head_mutex.unlock();
-			curr->mutex.unlock();
+			if (curr != nullptr) curr->mutex.unlock();
 			return;
 		}
 
@@ -124,7 +124,7 @@ public:
 			pred->mutex.unlock();
 		}
 
-		curr->mutex.unlock();
+		if (curr != nullptr) curr->mutex.unlock();
 		delete curr;
 	}
 
